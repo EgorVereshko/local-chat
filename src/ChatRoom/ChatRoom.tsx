@@ -1,18 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { loadMessages, saveMessages, Message } from './messageService';
 
 interface Props {
   user: { name: string; room: string };
-  logout: () => void;
+  onLogout: () => void;
 }
 
-interface Message {
-  user: string;
-  content: string;
-  timestamp: string;
-  imageUrl?: string;
-}
-
-const ChatRoom: React.FC<Props> = ({ user, logout }) => {
+const ChatRoom: React.FC<Props> = ({ user, onLogout }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -28,10 +22,24 @@ const ChatRoom: React.FC<Props> = ({ user, logout }) => {
 
   // Загружаем сообщения из localStorage при первом рендере
   useEffect(() => {
-    const savedMessages = localStorage.getItem(user.room);
-    if (savedMessages) {
-      setMessages(JSON.parse(savedMessages));
-    }
+    const savedMessages = loadMessages(user.room);
+    setMessages(savedMessages);
+  }, [user.room]);
+
+  // Слушаем изменения в localStorage в других вкладках
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === user.room) {
+        const updatedMessages = JSON.parse(e.newValue || '[]');
+        setMessages(updatedMessages);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, [user.room]);
 
   // Прокручиваем чат вниз, чтобы показывать последние сообщения
@@ -59,14 +67,14 @@ const ChatRoom: React.FC<Props> = ({ user, logout }) => {
 
         const updatedMessages = [...messages, newMsgWithImage];
         setMessages(updatedMessages);
-        localStorage.setItem(user.room, JSON.stringify(updatedMessages));
-        setImage(null); // Сбрасываем выбранное изображение после отправки
+        saveMessages(user.room, updatedMessages); // Сохраняем сообщения в localStorage
+        setImage(null); // Сброс выбранного изображения, после отправки
       };
       reader.readAsDataURL(image);
     } else {
       const updatedMessages = [...messages, newMsg];
       setMessages(updatedMessages);
-      localStorage.setItem(user.room, JSON.stringify(updatedMessages));
+      saveMessages(user.room, updatedMessages); // Сохраняем сообщения в localStorage
     }
 
     setNewMessage('');
@@ -74,7 +82,7 @@ const ChatRoom: React.FC<Props> = ({ user, logout }) => {
   };
 
   const handleEmojiClick = (emoji: string) => {
-    setNewMessage(prev => prev + emoji);
+    setNewMessage((prev) => prev + emoji);
     setShowEmojiPicker(false); // Закрываем панель эмодзи после выбора
   };
 
@@ -92,62 +100,71 @@ const ChatRoom: React.FC<Props> = ({ user, logout }) => {
   };
 
   const imageBtnStyle = image ? { backgroundColor: 'yellow', borderRadius: '50%' } : {};
-  
+
   return (
-    <div className='chatBox'>
-      <div className='chatHeader'>
+    <div className="chatBox">
+      <div className="chatHeader">
         <h2>Комната: {user.room}</h2>
-        <div className="closeChat" onClick={logout}></div>
+        <div className="closeChat" onClick={onLogout}></div>
       </div>
 
-      <div className='horizontal-line'></div>
-      
-      <div className='chatContainer'>
+      <div className="horizontal-line"></div>
+
+      <div className="chatContainer">
         {messages.map((msg, index) => (
-          <div className='message' key={index}>
-            <strong>{msg.user}</strong> <p className='messageTime'>[{msg.timestamp}]:</p> <p className='messageContent'>{msg.content}</p>
+          <div className="message" key={index}>
+            <strong>{msg.user}</strong> <p className="messageTime">[{msg.timestamp}]:</p>
+            <p className="messageContent">{msg.content}</p>
             {msg.imageUrl && <img src={msg.imageUrl} alt="sent" className="messageImage" />}
-            <button className='quoteBtn' onClick={() => handleQuoteMessage(msg)}></button>
+            <button className="quoteBtn" onClick={() => handleQuoteMessage(msg)}></button>
           </div>
         ))}
         <div ref={messagesEndRef}></div>
       </div>
 
-      <div className='horizontal-line'></div>
+      <div className="horizontal-line"></div>
 
-      <div className='inputPanel'>
-        <button className='emojiBtn' onClick={() => setShowEmojiPicker(prev => !prev)}></button>
+      <div className="inputPanel">
+        <button className="emojiBtn" onClick={() => setShowEmojiPicker((prev) => !prev)}></button>
 
         <input
-          type="file" 
-          accept="image/*" 
-          onChange={handleImageChange} 
+          type="file"
+          accept="image/*"
+          onChange={handleImageChange}
           style={{ display: 'none' }}
           id="imageInput"
         />
         <label htmlFor="imageInput" className="imageBtn" style={imageBtnStyle}></label>
 
         <input
-          className='chatInput'
+          className="chatInput"
           type="text"
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
           placeholder="Введите сообщение..."
           onKeyDown={(e) => {
-            if (e.key == 'Enter') {
+            if (e.key === 'Enter') {
               e.preventDefault();
               handleSendMessage();
             }
           }}
         />
-        <button className='enterBtn' onClick={handleSendMessage}></button>  
-      </div>   
-      
+        <button className="enterBtn" onClick={handleSendMessage}></button>
+      </div>
+
       {showEmojiPicker && (
-        <div style={{ position: 'absolute', bottom: '60px', border: '1px solid #ccc', padding: '10px', backgroundColor: 'rgba(255, 255, 255, 0.5)' }}>
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '60px',
+            border: '1px solid #ccc',
+            padding: '10px',
+            backgroundColor: 'rgba(255, 255, 255, 0.5)',
+          }}
+        >
           {emojiList.map((emoji, index) => (
             <button
-              className='emojiList'
+              className="emojiList"
               key={index}
               onClick={() => handleEmojiClick(emoji)}
               style={{ fontSize: '20px', margin: '5px' }}

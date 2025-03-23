@@ -1,0 +1,82 @@
+.chatLogin {
+    width: 500px;
+    height: 600px;
+    margin: 0 auto;
+    margin-top: 50px;
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+  
+form {
+    margin-top: 50px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+}
+  
+form input {
+    width: 75%;
+    margin: 0 auto;
+    margin-bottom: 20px;
+    flex-grow: 1;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 15px;
+    outline: none;
+}
+  
+form input:focus {
+    border-color: #007bff;
+}
+  
+form button {
+    width: 50%;
+    margin: 0 auto;
+    margin-top: 50px;
+    border: 1px solid #ddd;
+    padding: 10px;
+    cursor: pointer;
+    font-weight: bold;
+    border-radius: 5px;
+    transition: background-color color .2s ease-in-out;
+}
+  
+form button:hover {
+    background-color: #007bff;
+    color: #fff;
+}
+
+.loginError {
+    color: red;
+    text-align: center;
+}
+
+@media (max-width: 768px) {
+    .chatLogin {
+        width: 90%;
+        max-width: 500px;
+        height: auto;
+        padding: 20px;
+    }
+    
+    form {
+        margin-top: 20px;
+        padding: 0;
+    }
+    
+    form input {
+        width: 100%;
+        font-size: 16px;
+        box-sizing: border-box;
+    }
+    
+    form button {
+        width: 100%;
+        font-size: 16px;
+    }
+}

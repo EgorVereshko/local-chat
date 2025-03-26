@@ -42,6 +42,13 @@ const ChatRoom: React.FC<Props> = ({ user, onLogout }) => {
     };
   }, [user.room]);
 
+  // Обработчик для отправки сообщений
+  const sendMessage = (newMsg: Message) => {
+    const updatedMessages = [...messages, newMsg];
+    setMessages(updatedMessages);
+    saveMessages(user.room, updatedMessages); // Сохраняем сообщения в localStorage
+  };
+
   // Прокручиваем чат вниз, чтобы показывать последние сообщения
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -64,17 +71,12 @@ const ChatRoom: React.FC<Props> = ({ user, onLogout }) => {
           ...newMsg,
           imageUrl: reader.result as string,
         };
-
-        const updatedMessages = [...messages, newMsgWithImage];
-        setMessages(updatedMessages);
-        saveMessages(user.room, updatedMessages); // Сохраняем сообщения в localStorage
+        sendMessage(newMsgWithImage);
         setImage(null); // Сброс выбранного изображения, после отправки
       };
       reader.readAsDataURL(image);
     } else {
-      const updatedMessages = [...messages, newMsg];
-      setMessages(updatedMessages);
-      saveMessages(user.room, updatedMessages); // Сохраняем сообщения в localStorage
+      sendMessage(newMsg);
     }
 
     setNewMessage('');

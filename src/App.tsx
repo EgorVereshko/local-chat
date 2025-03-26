@@ -1,37 +1,43 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import './ChatRoom/ChatRoom.css'
-import './Login/Login.css'
+import './ChatRoom/ChatRoom.css';
+import './Login/Login.css';
 import ChatRoom from './ChatRoom/ChatRoom';
 import Login from './Login/Login';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import StorageService from './services/StorageService';
+import { User } from './models/User';
 
 const App: React.FC = () => {
-  const [user, setUser] = useState<{ name: string; room: string } | null>(null);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
+    const storedUser = StorageService.getUser();
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      setUser(storedUser);
     }
   }, []);
 
   const onLogout = () => {
-    localStorage.removeItem('user');
+    StorageService.removeUser();
     setUser(null);
+  };
+
+  // callback для обработки отправки данных из Login
+  const handleLoginSubmit = (name: string, room: string) => {
+    const newUser = new User(name, room);
+    StorageService.setUser(newUser);
+    setUser(newUser);
   };
 
   return (
     <Router>
       <Routes>
         {/* Переход на страницу входа */}
-        <Route path="/login" element={<Login setUser={setUser} />} />
+        <Route path="/" element={<Login onSubmit={handleLoginSubmit} />} />
 
         {/* Переход на страницу чата, доступно только если пользователь есть */}
         <Route path="/chat" element={user ? <ChatRoom user={user} onLogout={onLogout} /> : <Navigate to="/" />} />
-
-        {/* Переход на страницу чата, если пользователь авторизован */}
-        <Route path="/" element={user ? <ChatRoom user={user} onLogout={onLogout} /> : <Navigate to="/login" />} />
       </Routes>
     </Router>
   );

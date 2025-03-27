@@ -4,17 +4,23 @@ import './ChatRoom/ChatRoom.css';
 import './Login/Login.css';
 import ChatRoom from './ChatRoom/ChatRoom';
 import Login from './Login/Login';
-import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate, useNavigate } from 'react-router-dom';
 import StorageService from './services/StorageService';
+import { UserService } from './services/UserService';
 import { User } from './models/User';
 
-const App: React.FC = () => {
+const AppContent: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
+  const navigate = useNavigate();
 
+  // Проверяем наличие пользователя при обновлении страницы
   useEffect(() => {
     const storedUser = StorageService.getUser();
     if (storedUser) {
       setUser(storedUser);
+      navigate('/chat');
+    } else {
+      navigate('/');
     }
   }, []);
 
@@ -25,20 +31,23 @@ const App: React.FC = () => {
 
   // callback для обработки отправки данных из Login
   const handleLoginSubmit = (name: string, room: string) => {
-    const newUser = new User(name, room);
+    const newUser = UserService.createUser(name, room);
     StorageService.setUser(newUser);
     setUser(newUser);
   };
 
   return (
-    <Router>
-      <Routes>
-        {/* Переход на страницу входа */}
-        <Route path="/" element={<Login onSubmit={handleLoginSubmit} />} />
+    <Routes>
+      <Route path="/" element={<Login onSubmit={handleLoginSubmit} />} />
+      <Route path="/chat" element={user ? <ChatRoom user={user} onLogout={onLogout} /> : <Navigate to="/" />} />
+    </Routes>
+  );
+};
 
-        {/* Переход на страницу чата, доступно только если пользователь есть */}
-        <Route path="/chat" element={user ? <ChatRoom user={user} onLogout={onLogout} /> : <Navigate to="/" />} />
-      </Routes>
+const App: React.FC = () => {
+  return (
+    <Router>
+      <AppContent />
     </Router>
   );
 };

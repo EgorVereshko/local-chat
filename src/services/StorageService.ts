@@ -1,19 +1,21 @@
 import { User } from '../models/User';
 
 class StorageService {
+  // Устанавливаем пользователя в sessionStorage
   static setUser(user: User) {
-    localStorage.setItem('user', JSON.stringify(user.toJSON()));
+    sessionStorage.setItem('user', JSON.stringify(user));
   }
 
+  // Получаем пользователя из sessionStorage
   static getUser(): User | null {
-    const storedUser = localStorage.getItem('user');
+    const storedUser = sessionStorage.getItem('user');
     if (!storedUser) return null;
-    const userData = JSON.parse(storedUser);
-    return User.fromJSON(userData); // Восстановление объекта User
+    return JSON.parse(storedUser);
   }
 
+  // Удаляем пользователя из sessionStorage
   static removeUser() {
-    localStorage.removeItem('user');
+    sessionStorage.removeItem('user');
   }
 }
 

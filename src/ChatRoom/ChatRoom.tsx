@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { loadMessages, saveMessages, Message } from './messageService';
+import { Message, loadMessages, saveMessages, loadUsers, saveUsers } from '../services/MessageService';
 
 interface Props {
   user: { name: string; room: string };
@@ -12,6 +12,7 @@ const ChatRoom: React.FC<Props> = ({ user, onLogout }) => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [quotedMessage, setQuotedMessage] = useState<Message | null>(null);
   const [image, setImage] = useState<File | null>(null);
+  const [usersInRoom, setUsersInRoom] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   const emojiList = [
@@ -20,10 +21,27 @@ const ChatRoom: React.FC<Props> = ({ user, onLogout }) => {
     '😳', '🙄', '😡', '🥵', '😈', '🥶', '😬', '😑', '🤢', '🤮', '🤑', '😴', '💀', '🤡', '💩', '😸', '☠️', '👾',
   ];
 
-  // Загружаем сообщения из localStorage при первом рендере
+  // Загружаем сообщения и пользователей из localStorage при первом рендере
   useEffect(() => {
     const savedMessages = loadMessages(user.room);
     setMessages(savedMessages);
+
+    // Загружаем пользователей из localStorage
+    const storedUsers = loadUsers(user.room);
+    setUsersInRoom(storedUsers);
+
+    // Добавляем текущего пользователя в список, если его нет в списке
+    if (!storedUsers.includes(user.name)) {
+      const updatedUsers = [...storedUsers, user.name];
+      saveUsers(user.room, updatedUsers);
+      setUsersInRoom(updatedUsers);
+    }
+
+    // Очистка при размонтировании (выход из чата)
+    return () => {
+      const updatedUsers = storedUsers.filter((username: string) => username !== user.name);
+      saveUsers(user.room, updatedUsers);
+    };
   }, [user.room]);
 
   // Слушаем изменения в localStorage в других вкладках
@@ -32,6 +50,9 @@ const ChatRoom: React.FC<Props> = ({ user, onLogout }) => {
       if (e.key === user.room) {
         const updatedMessages = JSON.parse(e.newValue || '[]');
         setMessages(updatedMessages);
+      } else if (e.key === `${user.room}-users`) {
+        const updatedUsers = JSON.parse(e.newValue || '[]');
+        setUsersInRoom(updatedUsers);
       }
     };
 
@@ -55,7 +76,7 @@ const ChatRoom: React.FC<Props> = ({ user, onLogout }) => {
   }, [messages]);
 
   const handleSendMessage = () => {
-    if (newMessage.trim() === '' && !image) return; // Проверка, чтобы не отправить пустое сообщение
+    if (newMessage.trim() === '' && !image) return;
 
     const newMsg: Message = {
       user: user.name,
